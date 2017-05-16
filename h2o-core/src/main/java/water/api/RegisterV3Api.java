@@ -221,6 +221,14 @@ public class RegisterV3Api extends AbstractRegister {
         "GET /3/PartialDependence/{name}", ModelsHandler.class, "fetchPartialDependence",
         "Fetch partial dependence data.");
 
+    RequestServer.registerEndpoint("makeICE",
+            "POST /3/IndividualConditionalExpectation/", ModelsHandler.class, "makeIndividualConditionalExpectation",
+            "Create data for individual conditional expectation plot(s) for the specified model and frame.");
+
+    RequestServer.registerEndpoint("fetchICE",
+            "GET /3/IndividualConditionalExpectation/{name}", ModelsHandler.class, "fetchIndividualConditionalExpectation",
+            "Fetch individual conditional expectation data.");
+
     // Model serialization - import/export calls
     RequestServer.registerEndpoint("importModel",
         "POST /99/Models.bin/{model_id}", ModelsHandler.class, "importModel",

@@ -2961,6 +2961,83 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   }
 }
 
+#' ICE Plots
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @param data An H2OFrame object used for calculating PDP bins
+#' @param row Row index for observation to score and construct the plot
+#' @param cols Feature(s) for which partial dependence will be calculated.
+#' @param destination_key An key reference to the created partial dependence tables in H2O.
+#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceed the level count.
+#' @param plot A logical specifying whether to plot partial dependence table.
+#' @return Plot and list of calculated response tables for each feature requested.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prostate.path <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prostate.path, destination_frame = "prostate.hex")
+#' prostate.hex[, "CAPSULE"] <- as.factor(prostate.hex[, "CAPSULE"] )
+#' prostate.hex[, "RACE"] <- as.factor(prostate.hex[,"RACE"] )
+#' prostate.gbm <- h2o.gbm(x = c("AGE","RACE"),
+#'                        y = "CAPSULE",
+#'                        training_frame = prostate.hex,
+#'                        ntrees = 10,
+#'                        max_depth = 5,
+#'                        learn_rate = 0.1)
+#' h2o.icePlot(object = prostate.gbm, data = prostate.hex, row = 10, cols = c("AGE"))
+#' }
+#' @export
+h2o.icePlot <- function(object, data, row, cols, destination_key, nbins=20, plot = TRUE) {
+  if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
+  if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
+  if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
+  if(!is.numeric(row) | !(row > 0) ) stop("row must be a positive numeric")
+  if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
+  if(!is.logical(plot)) stop("plot must be a logical value")
+  if(missing(cols)) cols =  object@parameters$x
+
+  y = object@parameters$y
+  x = cols
+  args <- .verify_dataxy(data, x, y)
+
+  parms = list()
+  parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
+  parms$model_id  <- attr(object, "model_id")
+  parms$frame_id <- attr(data, "id")
+  parms$row <- row
+  parms$nbins <- nbins
+  if(!missing(destination_key)) parms$destination_key = destination_key
+
+  res <- .h2o.__remoteSend(method = "POST", h2oRestApiVersion = 3, page = "IndividualConditionalExpectation/", .params = parms)
+  .h2o.__waitOnJob(res$key$name)
+  url <- gsub("/3/", "", res$dest$URL)
+  res <- .h2o.__remoteSend(url, method = "GET", h2oRestApiVersion = 3)
+
+  ## Change feature names to the original supplied, the following is okay because order is preserved
+  ice <- res$ind_cond_exp_data
+  for(i in 1:length(ice)) if(!all(is.na( ice[[i]])) ) names(ice[[i]]) <- c(cols[i], "response")
+
+  col_types = unlist(h2o.getTypes(data))
+  col_names = names(data)
+  ice.plot <- function(pp) {
+    if(!all(is.na(pp))) {
+      type = col_types[which(col_names == names(pp)[1])]
+      if(type == "enum") pp[,1] = as.factor( pp[,1])
+      plot(pp[,1:2], type = "l", main = attr(x,"description") )
+    } else {
+      print("Individual Conditional Expectation not calculated--make sure nbins is as high as the level count")
+    }
+  }
+
+  if(plot) lapply(ice, ice.plot)
+  if(length( ice) == 1) {
+    return(ice[[1]])
+  } else {
+    return(ice)
+  }
+}
+
 #' Feature Generation via H2O Deep Learning or DeepWater Model
 #'
 #' Extract the non-linear feature from an H2O data set using an H2O deep learning

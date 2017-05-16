@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 
+import hex.IndividualConditionalExpectation;
 import hex.Model;
 import hex.ModelMojoWriter;
 import hex.PartialDependence;
@@ -179,6 +180,23 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   public PartialDependenceV3 fetchPartialDependence(int version, KeyV3.PartialDependenceKeyV3 s) {
     PartialDependence partialDependence = DKV.getGet(s.key());
     return new PartialDependenceV3().fillFromImpl(partialDependence);
+  }
+
+  @SuppressWarnings("unused") // called from the RequestServer through reflection
+  public JobV3 makeIndividualConditionalExpectation(int version, IndividualConditionalExpectationV3 s) {
+    IndividualConditionalExpectation individualConditionalExpectation;
+    if (s.destination_key != null)
+      individualConditionalExpectation = new IndividualConditionalExpectation(s.destination_key.key());
+    else
+      individualConditionalExpectation = new IndividualConditionalExpectation(Key.<IndividualConditionalExpectation>make());
+    s.fillImpl(individualConditionalExpectation); //fill frame_id/model_id/nbins/etc.
+    return new JobV3(individualConditionalExpectation.execImpl());
+  }
+
+  @SuppressWarnings("unused") // called from the RequestServer through reflection
+  public IndividualConditionalExpectationV3 fetchIndividualConditionalExpectation(int version, KeyV3.IndividualConditionalExpectationKeyV3 s) {
+    IndividualConditionalExpectation individualConditionalExpectation = DKV.getGet(s.key());
+    return new IndividualConditionalExpectationV3().fillFromImpl(individualConditionalExpectation);
   }
 
   /** Remove an unlocked model.  Fails if model is in-use. */

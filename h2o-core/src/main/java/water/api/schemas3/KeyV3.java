@@ -1,5 +1,6 @@
 package water.api.schemas3;
 
+import hex.IndividualConditionalExpectation;
 import hex.Model;
 import hex.PartialDependence;
 import hex.grid.Grid;
@@ -112,6 +113,11 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     public PartialDependenceKeyV3(Key<PartialDependence> key) { super(key); }
   }
 
+  public static class IndividualConditionalExpectationKeyV3 extends KeyV3<Iced, IndividualConditionalExpectationKeyV3, IndividualConditionalExpectation> {
+    public IndividualConditionalExpectationKeyV3() {}
+    public IndividualConditionalExpectationKeyV3(Key<IndividualConditionalExpectation> key) { super(key); }
+  }
+
   @Override public S fillFromImpl(Iced i) {
     if (! (i instanceof Key))
       throw new H2OIllegalArgumentException("fillFromImpl", "key", i);
@@ -143,6 +149,8 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
       this.URL = "/3/Models/" + key.toString();
     else if (PartialDependence.class.isAssignableFrom(keyed_class))
       this.URL = "/3/PartialDependence/" + key.toString();
+    else if (IndividualConditionalExpectation.class.isAssignableFrom(keyed_class))
+      this.URL = "/3/IndividualConditionalExpectation/" + key.toString();
     else if (Vec.class.isAssignableFrom(keyed_class))
       this.URL = null;
     else
